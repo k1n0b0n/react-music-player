@@ -349,7 +349,7 @@ export default class ReactJkMusicPlayer extends PureComponent {
           onMouseDownCapture={this.onProgressSliderInteraction}
           onTouchStartCapture={this.onProgressSliderInteraction}
           onKeyDownCapture={this.onProgressSliderInteraction}
-          onBlur={this.onProgressSliderBlur}
+          onBlurCapture={this.onProgressSliderBlur}
         >
           <Slider
             max={Math.ceil(this.audioDuration)}
@@ -1609,7 +1609,8 @@ export default class ReactJkMusicPlayer extends PureComponent {
   // rc-slider treats a focus on its handle as the start of a drag. When the
   // window regains focus, the browser refocuses the handle: the slider seeks to
   // the handle's pixel position, then seeks again on the next blur. Only honor
-  // slider changes that follow a pointer or keyboard interaction.
+  // slider changes that follow a pointer or keyboard interaction, and only
+  // commit a seek when such a change happened.
   onProgressSliderInteraction = () => {
     this.isProgressSliderInteracting = true
   }
@@ -1620,14 +1621,17 @@ export default class ReactJkMusicPlayer extends PureComponent {
 
   onProgressSliderChange = (currentTime) => {
     if (this.isProgressSliderInteracting) {
+      this.hasProgressSliderChanged = true
       this.onProgressChange(currentTime)
     }
   }
 
   onProgressSliderAfterChange = (currentTime) => {
-    if (this.isProgressSliderInteracting) {
+    if (this.hasProgressSliderChanged) {
       this.onAudioSeeked(currentTime)
     }
+    this.isProgressSliderInteracting = false
+    this.hasProgressSliderChanged = false
   }
 
   onAudioSeeked = (currentTime) => {

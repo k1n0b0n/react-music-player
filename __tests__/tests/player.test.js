@@ -1817,6 +1817,7 @@ describe('<ReactJkMusicPlayer/>', () => {
         }}
       />,
     )
+    Object.defineProperty(audio, 'duration', { value: 300 })
     audio.currentTime = 100
     wrapper.setState({ currentTime: 100 })
 
@@ -1841,6 +1842,7 @@ describe('<ReactJkMusicPlayer/>', () => {
         }}
       />,
     )
+    Object.defineProperty(audio, 'duration', { value: 300 })
     audio.currentTime = 100
     wrapper.setState({ currentTime: 100 })
 
@@ -1851,6 +1853,118 @@ describe('<ReactJkMusicPlayer/>', () => {
     document.dispatchEvent(new MouseEvent('mouseup'))
 
     expect(audio.currentTime).toEqual(0)
+    expect(onAudioSeeked).toHaveBeenCalledTimes(1)
+  })
+
+  it('should commit the seek when the window loses focus while dragging the progress bar', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    Object.defineProperty(audio, 'duration', { value: 300 })
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    wrapper
+      .find('.progress-bar .rc-slider')
+      .hostNodes()
+      .simulate('mousedown', { button: 0 })
+    wrapper.find('.progress-bar .rc-slider-handle').hostNodes().simulate('blur')
+
+    expect(audio.currentTime).toEqual(0)
+    expect(onAudioSeeked).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not seek again when the window loses and regains focus after a click on the progress bar', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    Object.defineProperty(audio, 'duration', { value: 300 })
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    wrapper
+      .find('.progress-bar .rc-slider')
+      .hostNodes()
+      .simulate('mousedown', { button: 0 })
+    document.dispatchEvent(new MouseEvent('mouseup'))
+    audio.currentTime = 50
+    wrapper.setState({ currentTime: 50 })
+
+    const handle = wrapper.find('.progress-bar .rc-slider-handle').hostNodes()
+    handle.simulate('blur')
+    handle.simulate('focus')
+    handle.simulate('blur')
+
+    expect(audio.currentTime).toEqual(50)
+    expect(onAudioSeeked).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not seek when an unrelated key is pressed after the progress bar handle regains focus', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    Object.defineProperty(audio, 'duration', { value: 300 })
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    const handle = wrapper.find('.progress-bar .rc-slider-handle').hostNodes()
+    handle.simulate('focus')
+    handle.simulate('keydown', { keyCode: 9 })
+    handle.simulate('blur')
+
+    expect(audio.currentTime).toEqual(100)
+    expect(onAudioSeeked).not.toHaveBeenCalled()
+  })
+
+  it('should seek when an arrow key is pressed on the progress bar handle', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    Object.defineProperty(audio, 'duration', { value: 300 })
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    const handle = wrapper.find('.progress-bar .rc-slider-handle').hostNodes()
+    handle.simulate('focus')
+    handle.simulate('keydown', { keyCode: 39 })
+
+    expect(wrapper.state('currentTime')).toEqual(101)
     expect(onAudioSeeked).toHaveBeenCalledTimes(1)
   })
 
