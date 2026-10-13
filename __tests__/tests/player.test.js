@@ -1804,6 +1804,56 @@ describe('<ReactJkMusicPlayer/>', () => {
     expect(onAudioSeeked).toHaveBeenCalledTimes(1)
   })
 
+  it('should not seek when the progress bar handle regains focus with the window', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    const handle = wrapper.find('.progress-bar .rc-slider-handle').hostNodes()
+    handle.simulate('focus')
+    handle.simulate('blur')
+
+    expect(audio.currentTime).toEqual(100)
+    expect(onAudioSeeked).not.toHaveBeenCalled()
+  })
+
+  it('should seek when the progress bar is clicked', () => {
+    const onAudioSeeked = jest.fn()
+    let audio
+    const wrapper = mount(
+      <ReactJkMusicPlayer
+        audioLists={[{ musicSrc: 'x', cover: '', duration: 300 }]}
+        mode="full"
+        onAudioSeeked={onAudioSeeked}
+        getAudioInstance={(node) => {
+          audio = node
+        }}
+      />,
+    )
+    audio.currentTime = 100
+    wrapper.setState({ currentTime: 100 })
+
+    wrapper
+      .find('.progress-bar .rc-slider')
+      .hostNodes()
+      .simulate('mousedown', { button: 0 })
+    document.dispatchEvent(new MouseEvent('mouseup'))
+
+    expect(audio.currentTime).toEqual(0)
+    expect(onAudioSeeked).toHaveBeenCalledTimes(1)
+  })
+
   it('should never fade on iOS', async () => {
     const platformGetter = jest.spyOn(window.navigator, 'platform', 'get')
     platformGetter.mockReturnValue('iPhone')

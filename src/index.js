@@ -332,8 +332,8 @@ export default class ReactJkMusicPlayer extends PureComponent {
 
     const progressHandler = seeked
       ? {
-          onChange: this.onProgressChange,
-          onAfterChange: this.onAudioSeeked,
+          onChange: this.onProgressSliderChange,
+          onAfterChange: this.onProgressSliderAfterChange,
         }
       : {}
 
@@ -345,13 +345,20 @@ export default class ReactJkMusicPlayer extends PureComponent {
             style={{ width: `${Math.min(loadedProgress, 100)}%` }}
           />
         )}
-        <Slider
-          max={Math.ceil(this.audioDuration)}
-          defaultValue={0}
-          value={Math.ceil(currentTime)}
-          {...progressHandler}
-          {...PROGRESS_BAR_SLIDER_OPTIONS}
-        />
+        <div
+          onMouseDownCapture={this.onProgressSliderInteraction}
+          onTouchStartCapture={this.onProgressSliderInteraction}
+          onKeyDownCapture={this.onProgressSliderInteraction}
+          onBlur={this.onProgressSliderBlur}
+        >
+          <Slider
+            max={Math.ceil(this.audioDuration)}
+            defaultValue={0}
+            value={Math.ceil(currentTime)}
+            {...progressHandler}
+            {...PROGRESS_BAR_SLIDER_OPTIONS}
+          />
+        </div>
       </>
     )
 
@@ -1597,6 +1604,30 @@ export default class ReactJkMusicPlayer extends PureComponent {
     // audio is paused, so without this the panel would freeze on the old line.
     this.lyric && this.lyric.update(currentTime * 1000)
     this.setState({ currentTime, isAudioSeeking: true })
+  }
+
+  // rc-slider treats a focus on its handle as the start of a drag. When the
+  // window regains focus, the browser refocuses the handle: the slider seeks to
+  // the handle's pixel position, then seeks again on the next blur. Only honor
+  // slider changes that follow a pointer or keyboard interaction.
+  onProgressSliderInteraction = () => {
+    this.isProgressSliderInteracting = true
+  }
+
+  onProgressSliderBlur = () => {
+    this.isProgressSliderInteracting = false
+  }
+
+  onProgressSliderChange = (currentTime) => {
+    if (this.isProgressSliderInteracting) {
+      this.onProgressChange(currentTime)
+    }
+  }
+
+  onProgressSliderAfterChange = (currentTime) => {
+    if (this.isProgressSliderInteracting) {
+      this.onAudioSeeked(currentTime)
+    }
   }
 
   onAudioSeeked = (currentTime) => {
